@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
@@ -6,6 +5,16 @@ import type { TranslationKey } from '../constants/translations';
 
 // This is a browser-only library. We assume it's loaded from the CDN in index.html
 declare const emailjs: any;
+
+// --- ACTION REQUIRED ---
+// Replace 'YOUR_SERVICE_ID' with your actual EmailJS Service ID.
+// 1. Sign up at https://www.emailjs.com/
+// 2. Connect your email provider to get a Service ID.
+// 3. Create an email template to get a Template ID. Your template should use variables like {{from_name}}, {{from_email}}, {{service}}, and {{message}}.
+const EMAILJS_SERVICE_ID = 'YOUR_SERVICE_ID';
+const EMAILJS_TEMPLATE_ID = 'template_g2ng0bd';
+const EMAILJS_PUBLIC_KEY = 'yEhJxw2dP647VED4M';
+
 
 const serviceOptions: { value: string; labelKey: TranslationKey }[] = [
     { value: 'kitchen', labelKey: 'serviceOptionKitchen' },
@@ -22,11 +31,11 @@ export const Contact: React.FC = () => {
     const [email, setEmail] = useState('');
     const [service, setService] = useState('');
     const [message, setMessage] = useState('');
-    const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+    const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error' | 'config_error'>('idle');
 
     useEffect(() => {
         // Reset status after a few seconds
-        if (status === 'success' || status === 'error') {
+        if (status === 'success' || status === 'error' || status === 'config_error') {
             const timer = setTimeout(() => setStatus('idle'), 5000);
             return () => clearTimeout(timer);
         }
@@ -34,16 +43,15 @@ export const Contact: React.FC = () => {
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        setStatus('sending');
 
-        // --- ACTION REQUIRED ---
-        // Replace 'YOUR_SERVICE_ID' and 'YOUR_TEMPLATE_ID' with your actual EmailJS credentials.
-        // 1. Sign up at https://www.emailjs.com/
-        // 2. Connect your email provider to get a Service ID.
-        // 3. Create an email template to get a Template ID. Your template should use variables like {{from_name}}, {{from_email}}, {{service}}, and {{message}}.
-        const serviceID = 'YOUR_SERVICE_ID';
-        const templateID = 'YOUR_TEMPLATE_ID';
-        const publicKey = 'yEhJxw2dP647VED4M';
+        // Check for placeholder credentials
+        if (EMAILJS_SERVICE_ID === 'YOUR_SERVICE_ID') {
+            console.error('EmailJS is not configured. Please add your Service ID in components/Contact.tsx.');
+            setStatus('config_error');
+            return;
+        }
+        
+        setStatus('sending');
         
         const selectedServiceOption = serviceOptions.find(opt => opt.value === service);
         const serviceText = selectedServiceOption ? t(selectedServiceOption.labelKey) : 'Not specified';
@@ -55,7 +63,7 @@ export const Contact: React.FC = () => {
             message: message,
         };
 
-        emailjs.send(serviceID, templateID, templateParams, publicKey)
+        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams, EMAILJS_PUBLIC_KEY)
             .then((response: any) => {
                console.log('SUCCESS!', response.status, response.text);
                setStatus('success');
@@ -149,9 +157,10 @@ export const Contact: React.FC = () => {
                                     {getButtonText()}
                                 </button>
                             </fieldset>
-                             <div className="mt-4 text-center text-sm">
+                             <div className="mt-4 text-center text-sm h-5">
                                 {status === 'success' && <p className="text-green-600 font-semibold">{t('formStatusSuccess')}</p>}
                                 {status === 'error' && <p className="text-red-600 font-semibold">{t('formStatusError')}</p>}
+                                {status === 'config_error' && <p className="text-red-600 font-semibold">{t('formStatusConfigError')}</p>}
                             </div>
                         </form>
                     </div>

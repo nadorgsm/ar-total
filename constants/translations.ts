@@ -67,6 +67,7 @@ export const translations = {
         formStatusSending: "Sending...",
         formStatusSuccess: "Message sent successfully! We will get back to you soon.",
         formStatusError: "Failed to send message. Please try again later.",
+        formStatusConfigError: "Could not send message. The email service is not configured correctly.",
     },
     nl: {
         pageTitle: "AR TOTAL INSTALLER | Professionele installatie- en reparatiediensten",
@@ -135,6 +136,7 @@ export const translations = {
         formStatusSending: "Verzenden...",
         formStatusSuccess: "Bericht succesvol verzonden! We nemen zo snel mogelijk contact met u op.",
         formStatusError: "Kon het bericht niet verzenden. Probeer het later opnieuw.",
+        formStatusConfigError: "Kon bericht niet verzenden. De e-mailservice is niet correct geconfigureerd.",
     }
 };
 
