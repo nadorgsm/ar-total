@@ -3,19 +3,6 @@ import { useState, useEffect } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import type { TranslationKey } from '../constants/translations';
 
-// This is a browser-only library. We assume it's loaded from the CDN in index.html
-declare const emailjs: any;
-
-// --- ACTION REQUIRED ---
-// Replace 'YOUR_SERVICE_ID' with your actual EmailJS Service ID.
-// 1. Sign up at https://www.emailjs.com/
-// 2. Connect your email provider to get a Service ID.
-// 3. Create an email template to get a Template ID. Your template should use variables like {{from_name}}, {{from_email}}, {{service}}, and {{message}}.
-const EMAILJS_SERVICE_ID = 'YOUR_SERVICE_ID';
-const EMAILJS_TEMPLATE_ID = 'template_g2ng0bd';
-const EMAILJS_PUBLIC_KEY = 'yEhJxw2dP647VED4M';
-
-
 const serviceOptions: { value: string; labelKey: TranslationKey }[] = [
     { value: 'kitchen', labelKey: 'serviceOptionKitchen' },
     { value: 'electrical', labelKey: 'serviceOptionElectrical' },
@@ -31,51 +18,55 @@ export const Contact: React.FC = () => {
     const [email, setEmail] = useState('');
     const [service, setService] = useState('');
     const [message, setMessage] = useState('');
-    const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error' | 'config_error'>('idle');
+    const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
 
     useEffect(() => {
         // Reset status after a few seconds
-        if (status === 'success' || status === 'error' || status === 'config_error') {
+        if (status === 'success' || status === 'error') {
             const timer = setTimeout(() => setStatus('idle'), 5000);
             return () => clearTimeout(timer);
         }
     }, [status]);
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-
-        // Check for placeholder credentials
-        if (EMAILJS_SERVICE_ID === 'YOUR_SERVICE_ID') {
-            console.error('EmailJS is not configured. Please add your Service ID in components/Contact.tsx.');
-            setStatus('config_error');
-            return;
-        }
-        
         setStatus('sending');
         
         const selectedServiceOption = serviceOptions.find(opt => opt.value === service);
         const serviceText = selectedServiceOption ? t(selectedServiceOption.labelKey) : 'Not specified';
 
-        const templateParams = {
-            from_name: name,
-            from_email: email,
+        const formData = {
+            name,
+            email,
             service: serviceText,
-            message: message,
+            message,
         };
 
-        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams, EMAILJS_PUBLIC_KEY)
-            .then((response: any) => {
-               console.log('SUCCESS!', response.status, response.text);
-               setStatus('success');
-               // Reset form
+        // A backend API endpoint is needed to securely send emails using your own SMTP server.
+        // The frontend will send the form data to this endpoint.
+        try {
+            const response = await fetch('/api/contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            if (response.ok) {
+                setStatus('success');
+                // Reset form
                 setName('');
                 setEmail('');
                 setService('');
                 setMessage('');
-            }, (err: any) => {
-               console.log('FAILED...', err);
-               setStatus('error');
-            });
+            } else {
+                setStatus('error');
+            }
+        } catch (error) {
+            console.error('Failed to send message:', error);
+            setStatus('error');
+        }
     };
     
     const getButtonText = () => {
@@ -160,7 +151,6 @@ export const Contact: React.FC = () => {
                              <div className="mt-4 text-center text-sm h-5">
                                 {status === 'success' && <p className="text-green-600 font-semibold">{t('formStatusSuccess')}</p>}
                                 {status === 'error' && <p className="text-red-600 font-semibold">{t('formStatusError')}</p>}
-                                {status === 'config_error' && <p className="text-red-600 font-semibold">{t('formStatusConfigError')}</p>}
                             </div>
                         </form>
                     </div>
