@@ -37,14 +37,13 @@ export const Contact: React.FC = () => {
         setStatus('sending');
 
         // --- ACTION REQUIRED ---
-        // Replace these placeholder values with your actual EmailJS credentials.
+        // Replace 'YOUR_SERVICE_ID' and 'YOUR_TEMPLATE_ID' with your actual EmailJS credentials.
         // 1. Sign up at https://www.emailjs.com/
         // 2. Connect your email provider to get a Service ID.
         // 3. Create an email template to get a Template ID. Your template should use variables like {{from_name}}, {{from_email}}, {{service}}, and {{message}}.
-        // 4. Find your Public Key in your account settings.
         const serviceID = 'YOUR_SERVICE_ID';
         const templateID = 'YOUR_TEMPLATE_ID';
-        const publicKey = 'YOUR_PUBLIC_KEY';
+        const publicKey = 'yEhJxw2dP647VED4M';
         
         const selectedServiceOption = serviceOptions.find(opt => opt.value === service);
         const serviceText = selectedServiceOption ? t(selectedServiceOption.labelKey) : 'Not specified';
