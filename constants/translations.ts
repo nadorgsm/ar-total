@@ -64,6 +64,9 @@ export const translations = {
         formLabelEmail: "Email",
         formLabelService: "Service",
         formLabelMessage: "Message",
+        formStatusSending: "Sending...",
+        formStatusSuccess: "Message sent successfully! We will get back to you soon.",
+        formStatusError: "Failed to send message. Please try again later.",
     },
     nl: {
         pageTitle: "AR TOTAL INSTALLER | Professionele installatie- en reparatiediensten",
@@ -129,6 +132,9 @@ export const translations = {
         formLabelEmail: "Email",
         formLabelService: "Dienst",
         formLabelMessage: "Bericht",
+        formStatusSending: "Verzenden...",
+        formStatusSuccess: "Bericht succesvol verzonden! We nemen zo snel mogelijk contact met u op.",
+        formStatusError: "Kon het bericht niet verzenden. Probeer het later opnieuw.",
     }
 };
 

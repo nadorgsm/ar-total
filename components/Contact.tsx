@@ -1,8 +1,11 @@
 
 import React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import type { TranslationKey } from '../constants/translations';
+
+// This is a browser-only library. We assume it's loaded from the CDN in index.html
+declare const emailjs: any;
 
 const serviceOptions: { value: string; labelKey: TranslationKey }[] = [
     { value: 'kitchen', labelKey: 'serviceOptionKitchen' },
@@ -19,33 +22,61 @@ export const Contact: React.FC = () => {
     const [email, setEmail] = useState('');
     const [service, setService] = useState('');
     const [message, setMessage] = useState('');
+    const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+
+    useEffect(() => {
+        // Reset status after a few seconds
+        if (status === 'success' || status === 'error') {
+            const timer = setTimeout(() => setStatus('idle'), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [status]);
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        setStatus('sending');
 
+        // --- ACTION REQUIRED ---
+        // Replace these placeholder values with your actual EmailJS credentials.
+        // 1. Sign up at https://www.emailjs.com/
+        // 2. Connect your email provider to get a Service ID.
+        // 3. Create an email template to get a Template ID. Your template should use variables like {{from_name}}, {{from_email}}, {{service}}, and {{message}}.
+        // 4. Find your Public Key in your account settings.
+        const serviceID = 'YOUR_SERVICE_ID';
+        const templateID = 'YOUR_TEMPLATE_ID';
+        const publicKey = 'YOUR_PUBLIC_KEY';
+        
         const selectedServiceOption = serviceOptions.find(opt => opt.value === service);
         const serviceText = selectedServiceOption ? t(selectedServiceOption.labelKey) : 'Not specified';
 
-        const subject = t('formSubject');
-        const body = [
-            `${t('formLabelName')}: ${name}`,
-            `${t('formLabelEmail')}: ${email}`,
-            `${t('formLabelService')}: ${serviceText}`,
-            '',
-            `${t('formLabelMessage')}:`,
-            message
-        ].join('\n');
+        const templateParams = {
+            from_name: name,
+            from_email: email,
+            service: serviceText,
+            message: message,
+        };
 
-        const mailtoUrl = `mailto:info@artotaalinstallateur.nl?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        
-        window.location.href = mailtoUrl;
-        
-        // Reset form
-        setName('');
-        setEmail('');
-        setService('');
-        setMessage('');
+        emailjs.send(serviceID, templateID, templateParams, publicKey)
+            .then((response: any) => {
+               console.log('SUCCESS!', response.status, response.text);
+               setStatus('success');
+               // Reset form
+                setName('');
+                setEmail('');
+                setService('');
+                setMessage('');
+            }, (err: any) => {
+               console.log('FAILED...', err);
+               setStatus('error');
+            });
     };
+    
+    const getButtonText = () => {
+        if (status === 'sending') {
+            return t('formStatusSending');
+        }
+        return t('formSubmitBtn');
+    }
 
     return (
         <section id="contact" className="py-20">
@@ -91,30 +122,38 @@ export const Contact: React.FC = () => {
                     
                     <div className="lg:col-span-3 bg-white p-8 rounded-lg shadow-lg">
                         <form id="contact-form" onSubmit={handleSubmit}>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                <div>
-                                    <label htmlFor="name" className="block mb-2 font-semibold text-dark text-sm">{t('formFullName')}</label>
-                                    <input type="text" id="name" value={name} onChange={e => setName(e.target.value)} className="w-full p-3 border border-light-gray rounded-md focus:ring-2 focus:ring-primary focus:border-transparent transition-all" required />
+                            <fieldset disabled={status === 'sending'}>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    <div>
+                                        <label htmlFor="name" className="block mb-2 font-semibold text-dark text-sm">{t('formFullName')}</label>
+                                        <input type="text" id="name" value={name} onChange={e => setName(e.target.value)} className="w-full p-3 border border-light-gray rounded-md focus:ring-2 focus:ring-primary focus:border-transparent transition-all" required />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="email" className="block mb-2 font-semibold text-dark text-sm">{t('formEmail')}</label>
+                                        <input type="email" id="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-3 border border-light-gray rounded-md focus:ring-2 focus:ring-primary focus:border-transparent transition-all" required />
+                                    </div>
                                 </div>
-                                <div>
-                                    <label htmlFor="email" className="block mb-2 font-semibold text-dark text-sm">{t('formEmail')}</label>
-                                    <input type="email" id="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-3 border border-light-gray rounded-md focus:ring-2 focus:ring-primary focus:border-transparent transition-all" required />
+                                <div className="mt-6">
+                                    <label htmlFor="service" className="block mb-2 font-semibold text-dark text-sm">{t('formService')}</label>
+                                    <select id="service" value={service} onChange={e => setService(e.target.value)} className="w-full p-3 border border-light-gray rounded-md focus:ring-2 focus:ring-primary focus:border-transparent transition-all bg-white" required>
+                                        <option value="">{t('formSelectService')}</option>
+                                        {serviceOptions.map(option => (
+                                            <option key={option.value} value={option.value}>{t(option.labelKey)}</option>
+                                        ))}
+                                    </select>
                                 </div>
+                                <div className="mt-6">
+                                    <label htmlFor="message" className="block mb-2 font-semibold text-dark text-sm">{t('formProjectDetails')}</label>
+                                    <textarea id="message" rows={5} value={message} onChange={e => setMessage(e.target.value)} className="w-full p-3 border border-light-gray rounded-md focus:ring-2 focus:ring-primary focus:border-transparent transition-all" required></textarea>
+                                </div>
+                                <button type="submit" className="mt-6 w-full bg-primary text-white py-3 px-7 rounded-full font-semibold uppercase tracking-wider text-sm border-2 border-primary hover:bg-primary/90 transition-all duration-300 transform hover:scale-105 disabled:opacity-75 disabled:cursor-not-allowed">
+                                    {getButtonText()}
+                                </button>
+                            </fieldset>
+                             <div className="mt-4 text-center text-sm">
+                                {status === 'success' && <p className="text-green-600 font-semibold">{t('formStatusSuccess')}</p>}
+                                {status === 'error' && <p className="text-red-600 font-semibold">{t('formStatusError')}</p>}
                             </div>
-                            <div className="mt-6">
-                                <label htmlFor="service" className="block mb-2 font-semibold text-dark text-sm">{t('formService')}</label>
-                                <select id="service" value={service} onChange={e => setService(e.target.value)} className="w-full p-3 border border-light-gray rounded-md focus:ring-2 focus:ring-primary focus:border-transparent transition-all bg-white" required>
-                                    <option value="">{t('formSelectService')}</option>
-                                    {serviceOptions.map(option => (
-                                        <option key={option.value} value={option.value}>{t(option.labelKey)}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="mt-6">
-                                <label htmlFor="message" className="block mb-2 font-semibold text-dark text-sm">{t('formProjectDetails')}</label>
-                                <textarea id="message" rows={5} value={message} onChange={e => setMessage(e.target.value)} className="w-full p-3 border border-light-gray rounded-md focus:ring-2 focus:ring-primary focus:border-transparent transition-all" required></textarea>
-                            </div>
-                            <button type="submit" className="mt-6 w-full bg-primary text-white py-3 px-7 rounded-full font-semibold uppercase tracking-wider text-sm border-2 border-primary hover:bg-primary/90 transition-all duration-300 transform hover:scale-105">{t('formSubmitBtn')}</button>
                         </form>
                     </div>
                 </div>
